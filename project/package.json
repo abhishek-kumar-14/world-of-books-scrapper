@@ -1,0 +1,15 @@
+{
+  "name": "product-explorer",
+  "version": "1.0.0",
+  "description": "Product Data Explorer - Full-Stack Application",
+  "scripts": {
+    "seed": "node scripts/seed-sample-data.js",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build:all": "cd backend && npm run build && cd ../frontend && npm run build"
+  },
+  "keywords": ["product-explorer", "scraping", "nestjs", "nextjs"],
+  "author": "Your Name",
+  "license": "MIT"
+}
