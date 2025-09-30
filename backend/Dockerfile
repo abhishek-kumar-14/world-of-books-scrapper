@@ -1,44 +1,48 @@
-FROM node:20.18-alpine
-
-# Install dependencies only when needed
-FROM base AS deps
+# Base image (common for all stages)
+FROM node:20.18-alpine AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# ---------------------
+# Dependencies stage
+# ---------------------
+FROM base AS deps
 COPY package*.json ./
-RUN npm ci --only=production
 
-# Rebuild the source code only when needed
+# Use npm ci if you have package-lock.json, otherwise switch to npm install
+RUN npm ci --omit=dev || npm install --omit=dev
+
+# ---------------------
+# Build stage
+# ---------------------
 FROM base AS builder
-WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Production image, copy all the files and run the application
+# ---------------------
+# Runner stage (production)
+# ---------------------
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nestjs
 
-# Copy built application
+# Copy built app and production node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
 
-# Create logs directory
+# Logs dir
 RUN mkdir -p logs && chown nestjs:nodejs logs
 
 USER nestjs
 
 EXPOSE 3001
-
 ENV PORT=3001
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]
